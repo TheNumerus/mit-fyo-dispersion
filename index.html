@@ -6,10 +6,27 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dispersion - FYO</title>
+    <link rel="preconnect" href="https://rsms.me/">
+    <link rel="stylesheet" href="https://rsms.me/inter/inter.css">
+    <script async src="https://unpkg.com/es-module-shims@1.6.3/dist/es-module-shims.js"></script>
+
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "https://unpkg.com/three@0.150/build/three.module.js"
+        }
+    }
+    </script>
 </head>
 
-<body style="margin: 0; height: 100%;">
-    <canvas id="canvas"></canvas>
+<body style="margin: 0; height: 100%; color: white; font-family: Inter, sans-serif">
+    <div style="position: absolute; width: 100%; padding: 10px">
+        <h2 style="margin-top: 0">Dispersion showcase</h2>
+        <ul>
+            <li>Right click to pan</li>
+        </ul>
+    </div>
+    <canvas id="canvas" oncontextmenu="return false;"></canvas>
     <script type="module" src="dist/index.js"></script>
 </body>
 

@@ -1,33 +1,7 @@
-import { fill } from "./renderer.js"
-import { Simulation } from "./simulation.js";
+import {Application} from "./app.js"
 
-window.onload = (e) => init()
-window.onresize = (e) => resize()
+let app = new Application()
 
-function init() {
-    repaint()
+window.onresize = (e) => app.resize()
 
-    let sim = new Simulation()
-}
-
-function resize() {
-    repaint()
-}
-
-function repaint() {
-    const canvas = document.getElementById("canvas") as HTMLCanvasElement
-    const context = canvas.getContext("2d")
-
-    canvas.width = document.body.clientWidth
-    canvas.height = document.body.clientHeight
-
-    if (context === null) {
-        throw new Error("Error getting context")
-    }
-
-    fill(canvas, context, "black")
-    context.font = "20px Iosevka"
-    context.textBaseline = "top"
-    context.fillStyle = "white"
-    context.fillText("Dispersion canvas", 10, 10)
-}
+app.run()
