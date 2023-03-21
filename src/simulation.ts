@@ -1,17 +1,6 @@
-import {BufferGeometry, Vector2, Vector3} from "three";
+import {BufferGeometry, Vector2} from "three";
 import * as THREE from "three";
-
-export class Photon {
-    wavelength: number;
-    position: Vector2;
-    intensity: number;
-
-    constructor(wavelength: number, position: Vector2 = new Vector2(), intensity: number = 1.0) {
-        this.wavelength = wavelength
-        this.position = position
-        this.intensity = intensity
-    }
-}
+import {wavelengthToColor} from "./math.js"
 
 export interface SimObject {
     geometry: BufferGeometry
@@ -75,10 +64,10 @@ export class PhotonSource{
 
     private computeGeometry(): BufferGeometry {
         let arr = new Float32Array([
-            0.1, -0.1, 0.0,
-            -0.1, -0.1, 0.0,
-            -0.1,  0.1, 0.0,
-            0.1,  0.1, 0.0,
+            0.0, -0.05, 0.0,
+            -0.1, -0.05, 0.0,
+            -0.1,  0.05, 0.0,
+            0.0,  0.05, 0.0,
         ])
 
         let geometry = new THREE.BufferGeometry()
@@ -96,53 +85,45 @@ export class PhotonSource{
 export class Simulation {
     objects: SimObject[]
     sources: PhotonSource[]
-    photons: Photon[]
     time: number
+    photonsPerTick: number
 
     constructor() {
         this.objects = []
         this.sources = []
-        this.photons = [new Photon(480.0, new Vector2(0.0, 0.0), 0.05)]
         this.time = 0.0
+        this.photonsPerTick = 4
     }
 
     public tick(delta: number) {
         this.time += delta / 1000.0
-        for (const obj of this.sources) {
-        }
-    }
-
-    private phaseMap = (x: number) => Math.max(0.0, Math.min(Math.min(6.0 * x, -6.0 * x + 4.0), 1.0))
-    private phaseToColor(phase: number): Vector3 {
-        let r = this.phaseMap(phase - Math.floor(phase))
-        let g = this.phaseMap((phase + 0.33333) - Math.floor(phase + 0.33333))
-        let b = this.phaseMap((phase + 0.66666) - Math.floor(phase + 0.66666))
-        return new Vector3(g, b, r)
     }
 
     public photonGeometries(): BufferGeometry[] {
-        return Array<PhotonSource[]>(1).fill(this.sources).flat().map((src, i) => {
+        return Array<PhotonSource[]>(this.photonsPerTick).fill(this.sources).flat().map((src, i) => {
             let geo = new THREE.BufferGeometry()
 
-            let noise = [(Math.random() - 0.5) * 0.0001, (Math.random() - 0.5) * 0.0001]
+            let spatialJitter = 0.001
+            let noise = [(Math.random() - 0.5) * spatialJitter, (Math.random() - 0.5) * spatialJitter]
 
             let jitter = Math.random() * 0.01
-            let phase = (this.time + i *.1 + jitter) - Math.floor(this.time + i * 0.1 + jitter)
+            let phase = (this.time + i * (1.0 / this.photonsPerTick) + jitter) - Math.floor(this.time + i * (1.0 / this.photonsPerTick) + jitter)
 
             let points = [
                 src.position.clone(),
-                src.position.clone().add(src.forward()),
-                src.position.clone().add(new Vector2(3.65 - phase * 0.85, (-0.5 + phase) * 1.5)),
-                src.position.clone().add(new Vector2(20.0, (-0.5 + phase) * 40.3))
+                src.position.clone().add(src.forward().multiplyScalar(1.7)),
+                src.position.clone().add(new Vector2(3.45 - phase * 0.45, (-0.5 + phase) * 0.5)),
+                src.position.clone().add(new Vector2(20.0, (-0.5 + phase) * 4.3))
             ]
-            let arr = new Float32Array(points.flatMap((a) => [a.x + noise[0], a.y + noise[1], 0.0]))
 
+            let arr = new Float32Array(points.flatMap((a) => [a.x + noise[0], a.y + noise[1], 0.0]))
             geo.setAttribute(
                 'position',
                 new THREE.BufferAttribute(arr, 3)
             )
 
-            let color = this.phaseToColor(this.time + i *.1 + jitter).toArray()
+            let nanometers = 350 + phase * 400
+            let color = wavelengthToColor(nanometers).toArray()
 
             let intensity = 1.0
 

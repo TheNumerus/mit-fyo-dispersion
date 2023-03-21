@@ -23,6 +23,7 @@ export class Application {
             canvas: this.canvas,
             preserveDrawingBuffer: true,
         })
+        this.renderer.outputEncoding = THREE.LinearEncoding
         this.renderer.autoClear = false
 
         this.resize()
@@ -64,7 +65,8 @@ export class Application {
         let materialObjects = new THREE.LineBasicMaterial({color: "white"})
         let materialPhoton = new THREE.LineBasicMaterial({
             vertexColors: true,
-            blending: THREE.NormalBlending
+            blending: THREE.CustomBlending,
+            blendEquation: THREE.MaxEquation
         })
 
         for (const photon of this.sim.photonGeometries()) {
@@ -106,8 +108,10 @@ export class Application {
     }
 
     mouseScroll(e: WheelEvent) {
-        this.camera.scale.x += e.deltaY / 1000
-        this.camera.scale.y += e.deltaY / 1000
+        let scale = this.camera.scale.x
+        scale = Math.max(0.1, scale + e.deltaY / 1000)
+        this.camera.scale.x = scale
+        this.camera.scale.y = scale
         this.renderer.clear()
     }
 }
