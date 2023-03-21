@@ -1,4 +1,4 @@
-import {Simulation, TrianglePrism} from "./simulation.js"
+import {Simulation, TrianglePrism, PhotonSource} from "./simulation.js"
 import * as THREE from "three"
 
 export class Application {
@@ -6,11 +6,13 @@ export class Application {
     private canvas: HTMLCanvasElement
     private renderer: THREE.WebGLRenderer
     private camera: THREE.OrthographicCamera
+    private scene: THREE.Scene
     private last: DOMHighResTimeStamp
 
     constructor() {
         this.sim = new Simulation()
         this.sim.objects.push(new TrianglePrism(new THREE.Vector2(), 3.0))
+        this.sim.sources.push(new PhotonSource(new THREE.Vector2(-2.5, 0.5), -0.1))
 
         this.canvas = document.getElementById("canvas") as HTMLCanvasElement
         this.canvas.addEventListener("mousemove", (e) => this.mouseMove.call(this, e))
@@ -24,6 +26,7 @@ export class Application {
         this.renderer.autoClear = false
 
         this.resize()
+        this.scene = new THREE.Scene()
 
         let aspect_ratio = this.canvas.width / this.canvas.height
         this.camera = new THREE.OrthographicCamera(
@@ -57,14 +60,29 @@ export class Application {
     }
 
     render() {
-        let scene = new THREE.Scene()
-        let material = new THREE.LineBasicMaterial({color: "white"})
+        this.scene.clear()
+        let materialObjects = new THREE.LineBasicMaterial({color: "white"})
+        let materialPhoton = new THREE.LineBasicMaterial({
+            vertexColors: true,
+            blending: THREE.NormalBlending
+        })
+
+        for (const photon of this.sim.photonGeometries()) {
+            let obj = new THREE.Line(photon, materialPhoton)
+            this.scene.add(obj)
+        }
 
         for (const simObj of this.sim.objects) {
-            let obj = new THREE.Line(simObj.geometry, material)
-            scene.add(obj)
+            let obj = new THREE.Line(simObj.geometry, materialObjects)
+            this.scene.add(obj)
         }
-        this.renderer.render(scene, this.camera)
+
+        for (const simObj of this.sim.sources) {
+            let obj = new THREE.Line(simObj.geometry, materialObjects)
+            this.scene.add(obj)
+        }
+
+        this.renderer.render(this.scene, this.camera)
     }
 
     run() {
@@ -83,11 +101,13 @@ export class Application {
         if ((e.buttons & 2) !== 0) {
             this.camera.position.x -= e.movementX / this.canvas.height * (this.camera.scale.x * 2.0)
             this.camera.position.y += e.movementY / this.canvas.height * (this.camera.scale.y * 2.0)
+            this.renderer.clear()
         }
     }
 
     mouseScroll(e: WheelEvent) {
         this.camera.scale.x += e.deltaY / 1000
         this.camera.scale.y += e.deltaY / 1000
+        this.renderer.clear()
     }
 }
