@@ -4,16 +4,19 @@ import {wavelengthToColor} from "./math.js"
 
 export interface SimObject {
     geometry: BufferGeometry
+    edges: {a: Vector2, b: Vector2}[]
 }
 
 export class TrianglePrism implements SimObject {
     position: Vector2;
     edgeLength: number;
-    geometry: BufferGeometry
+    geometry: BufferGeometry;
+    edges: {a: Vector2, b: Vector2}[];
 
     constructor(position: Vector2, edgeLength: number = 1.0) {
         this.position = position;
         this.edgeLength = edgeLength;
+        this.edges = this.computeEdges()
         this.geometry = this.computeGeometry()
     }
 
@@ -36,6 +39,10 @@ export class TrianglePrism implements SimObject {
         )
 
         return geometry
+    }
+
+    private computeEdges(): {a: Vector2, b: Vector2}[] {
+        return []
     }
 }
 

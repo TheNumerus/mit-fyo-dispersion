@@ -32,7 +32,7 @@ export function wavelengthToColor(wl: number): Vector3 {
     let z = 1.217 * g(wl, 437.0, 0.0845, 0.0278)
           + 0.681 * g(wl, 459.0, 0.0385, 0.0725)
 
-    let rgb = new Vector3(x, y , z).applyMatrix3(xyzToRgb)
+    let rgb = new Vector3(x, y, z).applyMatrix3(xyzToRgb)
 
     return new Vector3(
         gammaCompression(rgb.x),
