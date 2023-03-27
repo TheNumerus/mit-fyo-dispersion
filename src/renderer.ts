@@ -43,7 +43,9 @@ export class Renderer {
     public render(sim: Simulation) {
         this.scene.clear()
 
-        for (const photon of sim.photonGeometries()) {
+        let photons = sim.photonGeometries()
+
+        for (const photon of photons) {
             let obj = new Line(photon, this.photonMat)
             this.scene.add(obj)
         }
@@ -59,6 +61,18 @@ export class Renderer {
         }
 
         this.renderer.render(this.scene, this.camera)
+
+        for (const simObj of sim.objects) {
+            simObj.geometry.dispose()
+        }
+
+        for (const simObj of sim.sources) {
+            simObj.geometry.dispose()
+        }
+
+        for (let p of photons) {
+            p.dispose()
+        }
     }
 
     public resize(width: number, height: number) {
