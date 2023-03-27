@@ -1,4 +1,9 @@
-import {Matrix3, Vector3} from "three"
+import {Matrix3, Vector2, Vector3} from "three"
+
+export const SPECTRAL_SHORT = 486.1
+export const SPECTRAL_MEDIUM = 587.56
+export const SPECTRAL_LONG = 656.3
+export const SPECTRAL_SODIUM_D = 589.3
 
 const xyzToRgb = new Matrix3()
 xyzToRgb.set(
@@ -49,4 +54,20 @@ export function sign(n: number) {
     } else {
         return 0;
     }
+}
+
+export function refract(inVec: Vector2, normal: Vector2, ior: number, dot: number): Vector2 {
+    let r = 1.0 / ior
+
+    let rl = inVec.clone().multiplyScalar(r)
+
+    let repr = 1.0 - (r * r) * (1.0 - (dot * dot))
+
+    let mult = normal.clone().multiplyScalar((r * dot) - Math.sqrt(repr))
+
+    if (repr < 0.0) {
+        return inVec.clone().add(normal.clone().multiplyScalar(2.0 * dot))
+    }
+
+    return rl.add(mult).normalize()
 }

@@ -1,5 +1,6 @@
-import {Simulation, TrianglePrism, PhotonSource} from "./simulation.js"
+import {Simulation, TrianglePrism, PhotonSource, Square} from "./simulation.js"
 import {Renderer} from "./renderer.js";
+import {CauchyDispersion} from "./dispersion.js"
 import * as THREE from "three"
 
 export class Application {
@@ -9,10 +10,14 @@ export class Application {
     private last: DOMHighResTimeStamp
 
     constructor() {
+        let dispersionModel = new CauchyDispersion(1.52, 20)
+        let noModel = new CauchyDispersion(1.2, 8000000)
+
         this.sim = new Simulation()
-        this.sim.objects.push(new TrianglePrism(new THREE.Vector2(), 3.0))
-        this.sim.objects.push(new TrianglePrism(new THREE.Vector2(0.0, 2.2), 1.3))
-        this.sim.sources.push(new PhotonSource(new THREE.Vector2(-2.5, 0.5), -0.1))
+        this.sim.objects.push(new TrianglePrism(new THREE.Vector2(), 3.0, dispersionModel))
+        this.sim.objects.push(new TrianglePrism(new THREE.Vector2(0.0, 2.2), 1.3, dispersionModel))
+        this.sim.objects.push(new Square(new THREE.Vector2(1.8, 0.3), 1.0, noModel))
+        this.sim.sources.push(new PhotonSource(new THREE.Vector2(-2.0, -0.0), 0.4))
         this.sim.sources.push(new PhotonSource(new THREE.Vector2(-0.5, 2.5), -1.6))
 
         this.canvas = document.getElementById("canvas") as HTMLCanvasElement
@@ -46,7 +51,7 @@ export class Application {
         this.last = timestamp
         this.sim.tick(delta)
         this.render()
-        //requestAnimationFrame((c) => this.tick.call(this, c))
+        requestAnimationFrame((c) => this.tick.call(this, c))
     }
 
     mouseMove(e: MouseEvent) {
