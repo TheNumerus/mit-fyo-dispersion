@@ -11,7 +11,9 @@ export class Application {
     constructor() {
         this.sim = new Simulation()
         this.sim.objects.push(new TrianglePrism(new THREE.Vector2(), 3.0))
+        this.sim.objects.push(new TrianglePrism(new THREE.Vector2(0.0, 2.2), 1.3))
         this.sim.sources.push(new PhotonSource(new THREE.Vector2(-2.5, 0.5), -0.1))
+        this.sim.sources.push(new PhotonSource(new THREE.Vector2(-0.5, 2.5), -1.6))
 
         this.canvas = document.getElementById("canvas") as HTMLCanvasElement
         this.canvas.addEventListener("mousemove", (e) => this.mouseMove.call(this, e))
@@ -44,7 +46,7 @@ export class Application {
         this.last = timestamp
         this.sim.tick(delta)
         this.render()
-        requestAnimationFrame((c) => this.tick.call(this, c))
+        //requestAnimationFrame((c) => this.tick.call(this, c))
     }
 
     mouseMove(e: MouseEvent) {

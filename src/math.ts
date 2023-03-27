@@ -40,3 +40,13 @@ export function wavelengthToColor(wl: number): Vector3 {
         gammaCompression(rgb.z)
     )
 }
+
+export function sign(n: number) {
+    if (n > 0.0) {
+        return 1
+    } else if (n < 0.0) {
+        return -1
+    } else {
+        return 0;
+    }
+}

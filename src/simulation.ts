@@ -1,23 +1,31 @@
-import {BufferGeometry, Vector2} from "three";
+import {BufferGeometry, Matrix3, Vector2} from "three";
 import * as THREE from "three";
-import {wavelengthToColor} from "./math.js"
+import {wavelengthToColor, sign} from "./math.js"
+
+interface Edge {
+    a: Vector2
+    b: Vector2
+}
 
 export interface SimObject {
     geometry: BufferGeometry
-    edges: {a: Vector2, b: Vector2}[]
+    edges: Edge[]
+    ior: number
 }
 
 export class TrianglePrism implements SimObject {
     position: Vector2;
     edgeLength: number;
     geometry: BufferGeometry;
-    edges: {a: Vector2, b: Vector2}[];
+    edges: Edge[];
+    ior: number;
 
-    constructor(position: Vector2, edgeLength: number = 1.0) {
-        this.position = position;
-        this.edgeLength = edgeLength;
+    constructor(position: Vector2, edgeLength: number = 1.0, ior: number = 1.333) {
+        this.position = position
+        this.edgeLength = edgeLength
         this.edges = this.computeEdges()
         this.geometry = this.computeGeometry()
+        this.ior = ior
     }
 
     private computeGeometry(): BufferGeometry {
@@ -41,8 +49,24 @@ export class TrianglePrism implements SimObject {
         return geometry
     }
 
-    private computeEdges(): {a: Vector2, b: Vector2}[] {
-        return []
+    private computeEdges(): Edge[] {
+        let a = this.edgeLength
+        let a2 = this.edgeLength * this.edgeLength
+        let c = Math.sqrt(a2 - (a2 / 4.0))
+
+        let x1 = this.position.x
+        let x2 = this.position.x + a / 2
+        let x3 = this.position.x - a / 2
+
+        let y1 = this.position.y + 2 / 3 * c
+        let y2 = this.position.y - 1 / 3 * c
+        let y3 = y2
+
+        return [
+            {a: new Vector2(x1, y1), b: new Vector2(x2, y2)},
+            {a: new Vector2(x2, y2), b: new Vector2(x3, y3)},
+            {a: new Vector2(x3, y3), b: new Vector2(x1, y1)}
+        ]
     }
 }
 
@@ -108,7 +132,7 @@ export class Simulation {
 
     public photonGeometries(): BufferGeometry[] {
         return Array<PhotonSource[]>(this.photonsPerTick).fill(this.sources).flat().map((src, i) => {
-            let geo = new THREE.BufferGeometry()
+            let geo = new BufferGeometry()
 
             let spatialJitter = 0.001
             let noise = [(Math.random() - 0.5) * spatialJitter, (Math.random() - 0.5) * spatialJitter]
@@ -116,12 +140,36 @@ export class Simulation {
             let jitter = Math.random() * 0.01
             let phase = (this.time + i * (1.0 / this.photonsPerTick) + jitter) - Math.floor(this.time + i * (1.0 / this.photonsPerTick) + jitter)
 
-            let points = [
-                src.position.clone(),
-                src.position.clone().add(src.forward().multiplyScalar(1.7)),
-                src.position.clone().add(new Vector2(3.45 - phase * 0.45, (-0.5 + phase) * 0.5)),
-                src.position.clone().add(new Vector2(20.0, (-0.5 + phase) * 4.3))
-            ]
+            let points = [src.position.clone()]
+            let last = src.position.clone()
+            let forward = src.forward().clone()
+            for (const x of [...Array(8).keys()]) {
+                let dstMin = 10000.0
+                let point = last
+                let found = false
+                let newForward = forward.clone()
+                for (const edge of this.allEdges()) {
+                    let res = rayEdgeIntersect(last, forward, edge)
+                    if (res !== null) {
+                        let dst = res.point.distanceTo(last)
+                        if (dstMin > dst && dst > 0.0001) {
+                            dstMin = dst
+                            point = res.point
+                            found = true
+                            // TODO compute ior
+                            newForward = forward.clone().rotateAround(new Vector2(), (phase - 0.5) * 0.1)
+                        }
+                    }
+                }
+                if (found) {
+                    last = point.clone()
+                    points.push(point)
+                    forward = newForward
+                } else {
+                    points.push(last.add(forward.multiplyScalar(20.0)))
+                    break
+                }
+            }
 
             let arr = new Float32Array(points.flatMap((a) => [a.x + noise[0], a.y + noise[1], 0.0]))
             geo.setAttribute(
@@ -144,4 +192,44 @@ export class Simulation {
             return geo
         })
     }
+
+    private allEdges(): Edge[] {
+        return this.objects.flatMap(o => o.edges)
+    }
+}
+
+type IntersectResult = {point: Vector2, isFrontSide: boolean} | null
+
+function rayEdgeIntersect(origin: Vector2, direction: Vector2, edge: Edge): IntersectResult {
+    let a = edge.a.clone().sub(origin)
+    let b = edge.b.clone().sub(origin)
+
+    let theta = direction.angle()
+    let rot = new Matrix3().makeRotation(-theta)
+
+    a = a.applyMatrix3(rot)
+    b = b.applyMatrix3(rot)
+
+    if (sign(a.y) == sign(b.y)) {
+        return null
+    }
+
+    let isFrontSide = a.y > b.y
+
+    let dir = b.clone().sub(a)
+
+    let t = - (a.y) / (dir.y)
+
+    if (t <= 0.001) {
+        return null
+    }
+
+    let point = new Vector2(a.x + dir.x * t, 0.0)
+    if (point.x < 0.0) {
+        return null
+    }
+    point.applyMatrix3(new Matrix3().makeRotation(theta))
+    point.add(origin)
+
+    return {point, isFrontSide}
 }
