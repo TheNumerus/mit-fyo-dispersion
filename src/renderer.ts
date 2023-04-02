@@ -1,9 +1,10 @@
-import {LineBasicMaterial, OrthographicCamera, Scene, WebGLRenderer, Line} from "three";
+import {LineBasicMaterial, OrthographicCamera, Scene, WebGLRenderer, Line, Object3D} from "three"
 import * as THREE from "three";
-import {Simulation} from "./simulation";
+import {Movable, Simulation} from "./simulation"
 
 export class Renderer {
-    private scene: Scene
+    scene: Scene
+    public objects: Map<Movable, Object3D>
     private renderer: WebGLRenderer
     public camera: OrthographicCamera
     private objectMat: LineBasicMaterial
@@ -38,29 +39,42 @@ export class Renderer {
         this.camera.scale.x = 3.0
         this.camera.scale.y = 3.0
         this.camera.position.z = 1.0
+
+        this.objects = new Map()
     }
 
     public render(sim: Simulation) {
-        this.scene.clear()
-
         let photons = sim.photonGeometries()
+
+        let photonObjs = [];
 
         for (const photon of photons) {
             let obj = new Line(photon, this.photonMat)
             this.scene.add(obj)
+            photonObjs.push(obj)
         }
 
         for (const simObj of sim.objects) {
-            let obj = new Line(simObj.geometry, this.objectMat)
-            this.scene.add(obj)
+            let obj = this.objects.get(simObj)
+            if (obj === undefined) {
+                obj = new Line(simObj.geometry, this.objectMat)
+                this.objects.set(simObj, obj)
+                this.scene.add(obj)
+            }
         }
 
         for (const simObj of sim.sources) {
-            let obj = new Line(simObj.geometry, this.objectMat)
-            this.scene.add(obj)
+            let obj = this.objects.get(simObj)
+            if (obj === undefined) {
+                obj = new Line(simObj.geometry, this.objectMat)
+                this.objects.set(simObj, obj)
+                this.scene.add(obj)
+            }
         }
 
         this.renderer.render(this.scene, this.camera)
+
+        this.scene.remove(...photonObjs)
 
         for (const simObj of sim.objects) {
             simObj.geometry.dispose()

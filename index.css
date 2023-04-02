@@ -1,0 +1,41 @@
+body {
+    margin: 0;
+    height: 100%;
+    color: white;
+    font-family: Inter, sans-serif;
+    background-color: black;
+}
+html {
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    height: 100%;
+    background-color: black;
+}
+
+h2 {
+    display: inline-block;
+}
+
+.menu {
+    border: 1px solid white;
+    display: inline-block;
+    border-radius: 5px;
+}
+
+.menu div {
+    padding: 10px;
+}
+
+.menu div:not(:last-child) {
+    border-bottom: 1px solid white;
+}
+
+li {
+    display: inline-flex;
+}
+
+ul li {
+    margin-top: 10px;
+    margin-bottom: 10px;
+}

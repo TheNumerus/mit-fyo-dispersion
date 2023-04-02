@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" style="margin: 0; padding: 0; overflow: hidden; height: 100%; background-color: black;">
+<html lang="en">
 
 <head>
     <meta charset="UTF-8">
@@ -17,14 +17,28 @@
         }
     }
     </script>
+    <link rel="stylesheet" href="index.css">
 </head>
 
-<body style="margin: 0; height: 100%; color: white; font-family: Inter, sans-serif">
-    <div style="position: absolute; width: 100%; padding: 10px">
+<body>
+    <div style="position: absolute; padding: 10px; flex-direction: column; display: flex">
         <h2 style="margin-top: 0">Dispersion showcase</h2>
-        <ul>
-            <li>Right click to pan</li>
-        </ul>
+        <div class="menu">
+            <div>
+                - Left click to move objects
+            </div>
+            <div>
+                 - Right click to pan
+            </div>
+            <div>
+                <label for="photonCount">Photons per tick: <span id="photonCountSpan"></span></label>
+                <br><input class="form-input" id="photonCount" value="4" min="1" max="64" type="range" style="width: 100%"/>
+            </div>
+            <div>
+                <label for="maxSegments">Max segments: <span id="maxSegmentsSpan"></span></label>
+                <br><input class="form-input" id="maxSegments" value="8" min="1" max="16" type="range" style="width: 100%"/>
+            </div>
+        </div>
     </div>
     <canvas id="canvas" oncontextmenu="return false;"></canvas>
     <script type="module" src="dist/index.js"></script>

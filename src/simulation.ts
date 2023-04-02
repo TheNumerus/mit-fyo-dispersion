@@ -1,5 +1,4 @@
-import {BufferGeometry, Matrix3, Vector2} from "three";
-import * as THREE from "three";
+import {BufferGeometry, Matrix3, Vector2, BufferAttribute} from "three";
 import {wavelengthToColor, sign, refract} from "./math.js"
 import {DispersionModel} from "./dispersion.js"
 
@@ -20,21 +19,36 @@ class Edge {
     }
 }
 
-export interface SimObject {
+export interface SimObject extends Movable {
     geometry: BufferGeometry
     edges: Edge[]
     dispersion: DispersionModel
 }
 
-export class TrianglePrism implements SimObject {
+export interface Movable {
     position: Vector2;
+}
+
+export class TrianglePrism implements SimObject, Movable {
+    _position: Vector2;
+
+    get position() {
+        return this._position
+    }
+
+    set position(newPos: Vector2) {
+        this._position = newPos
+        this.edges = this.computeEdges()
+        this.geometry = this.computeGeometry()
+    }
+
     edgeLength: number;
     geometry: BufferGeometry;
     edges: Edge[];
     dispersion: DispersionModel
 
     constructor(position: Vector2, edgeLength: number = 1.0, dispersion: DispersionModel) {
-        this.position = position
+        this._position = position
         this.edgeLength = edgeLength
         this.edges = this.computeEdges()
         this.geometry = this.computeGeometry()
@@ -53,10 +67,10 @@ export class TrianglePrism implements SimObject {
             this.position.x, this.position.y + 2 / 3 * c, 0.0,
         ])
 
-        let geometry = new THREE.BufferGeometry()
+        let geometry = new BufferGeometry()
         geometry.setAttribute(
             'position',
-            new THREE.BufferAttribute(arr, 3)
+            new BufferAttribute(arr, 3)
         )
 
         return geometry
@@ -83,15 +97,26 @@ export class TrianglePrism implements SimObject {
     }
 }
 
-export class Square implements SimObject {
-    position: Vector2;
+export class Square implements SimObject, Movable {
+    _position: Vector2;
+
+    get position() {
+        return this._position
+    }
+
+    set position(newPos: Vector2) {
+        this._position = newPos
+        this.edges = this.computeEdges()
+        this.geometry = this.computeGeometry()
+    }
+
     edgeLength: number;
     geometry: BufferGeometry;
     edges: Edge[];
     dispersion: DispersionModel
 
     constructor(position: Vector2, edgeLength: number = 1.0, dispersion: DispersionModel) {
-        this.position = position
+        this._position = position
         this.edgeLength = edgeLength
         this.edges = this.computeEdges()
         this.geometry = this.computeGeometry()
@@ -109,10 +134,10 @@ export class Square implements SimObject {
             this.position.x + a / 2, this.position.y + a / 2, 0.0,
         ])
 
-        let geometry = new THREE.BufferGeometry()
+        let geometry = new BufferGeometry()
         geometry.setAttribute(
             'position',
-            new THREE.BufferAttribute(arr, 3)
+            new BufferAttribute(arr, 3)
         )
 
         return geometry
@@ -136,7 +161,7 @@ export class Square implements SimObject {
     }
 }
 
-export class PhotonSource{
+export class PhotonSource implements Movable{
     position: Vector2;
     _rotation: number;
 
@@ -167,10 +192,10 @@ export class PhotonSource{
             0.0,  0.05, 0.0,
         ])
 
-        let geometry = new THREE.BufferGeometry()
+        let geometry = new BufferGeometry()
         geometry.setAttribute(
             'position',
-            new THREE.BufferAttribute(arr, 3)
+            new BufferAttribute(arr, 3)
         )
         geometry.rotateZ(this._rotation)
         geometry.translate(this.position.x, this.position.y, 0.0)
@@ -184,12 +209,14 @@ export class Simulation {
     sources: PhotonSource[]
     time: number
     photonsPerTick: number
+    maxSegments: number
 
     constructor() {
         this.objects = []
         this.sources = []
         this.time = 0.0
         this.photonsPerTick = 4
+        this.maxSegments = 8
     }
 
     public tick(delta: number) {
@@ -208,7 +235,7 @@ export class Simulation {
             let points = [src.position.clone()]
             let last = src.position.clone()
             let forward = src.forward().clone()
-            for (const x of [...Array(8).keys()]) {
+            for (const x of [...Array(this.maxSegments).keys()]) {
                 let dstMin = 10000.0
                 let point = last
                 let found = false
@@ -248,7 +275,7 @@ export class Simulation {
             let arr = new Float32Array(points.flatMap((a) => [a.x, a.y, 0.0]))
             geo.setAttribute(
                 'position',
-                new THREE.BufferAttribute(arr, 3)
+                new BufferAttribute(arr, 3)
             )
 
             let color = wavelengthToColor(nanometers).toArray()
@@ -259,7 +286,7 @@ export class Simulation {
 
             geo.setAttribute(
                 'color',
-                new THREE.BufferAttribute(colors, 3)
+                new BufferAttribute(colors, 3)
             )
 
             return geo
