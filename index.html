@@ -38,6 +38,14 @@
                 <label for="maxSegments">Max segments: <span id="maxSegmentsSpan"></span></label>
                 <br><input class="form-input" id="maxSegments" value="8" min="1" max="16" type="range" style="width: 100%"/>
             </div>
+            <div>
+                <label for="iorInput">Index of refraction: <span id="iorSpan"></span></label>
+                <br><input class="form-input" id="iorInput" value="1.52" min="1" max="2.5" type="range" step="0.01" style="width: 100%"/>
+            </div>
+            <div>
+                <label for="abbeInput">Abbe number: <span id="abbeSpan"></span></label>
+                <br><input class="form-input" id="abbeInput" value="20" min="5" max="100" type="range" style="width: 100%"/>
+            </div>
         </div>
     </div>
     <canvas id="canvas" oncontextmenu="return false;"></canvas>

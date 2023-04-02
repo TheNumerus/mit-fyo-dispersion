@@ -1,6 +1,6 @@
 import {Simulation, TrianglePrism, PhotonSource, Square, Movable} from "./simulation.js"
 import {Renderer} from "./renderer.js";
-import {CauchyDispersion} from "./dispersion.js"
+import {CauchyDispersion, DispersionModel} from "./dispersion.js"
 import * as THREE from "three"
 import {Object3D, Raycaster, Vector2} from "three"
 
@@ -9,38 +9,54 @@ export class Application {
     private raycaster: Raycaster
     private renderer: Renderer
     private canvas: HTMLCanvasElement
-    private photonCountInput: HTMLInputElement
-    private photonCount: HTMLSpanElement
-    private maxSegmentsInput: HTMLInputElement
-    private maxSegments: HTMLSpanElement
+    private photonCount: SliderInput
+    private maxSegments: SliderInput
+    private abbeNumber: SliderInput
+    private ior: SliderInput
     private last: DOMHighResTimeStamp
+    private dispersionModel: CauchyDispersion
     private selected: {obj: Movable, mesh: Object3D} | null
 
     constructor() {
-        let dispersionModel = new CauchyDispersion(1.52, 20)
-        let noModel = new CauchyDispersion(1.2, 8000000)
+        this.dispersionModel = new CauchyDispersion(1.52, 20)
 
         this.sim = new Simulation()
-        this.sim.objects.push(new TrianglePrism(new THREE.Vector2(), 3.0, dispersionModel))
-        this.sim.objects.push(new TrianglePrism(new THREE.Vector2(0.0, 2.2), 1.3, dispersionModel))
-        this.sim.objects.push(new Square(new THREE.Vector2(1.8, 0.3), 1.0, noModel))
+        this.sim.objects.push(new TrianglePrism(new THREE.Vector2(), 3.0, this.dispersionModel))
+        this.sim.objects.push(new TrianglePrism(new THREE.Vector2(0.0, 2.2), 1.3, this.dispersionModel))
+        this.sim.objects.push(new Square(new THREE.Vector2(1.8, 0.3), 1.0, this.dispersionModel))
         this.sim.sources.push(new PhotonSource(new THREE.Vector2(-2.0, -0.0), 0.4))
         this.sim.sources.push(new PhotonSource(new THREE.Vector2(-0.5, 2.5), -1.6))
 
+        this.photonCount = new SliderInput("photonCount", "photonCountSpan", 4)
+        this.photonCount.onChange = (v) => {
+            this.renderer.clear()
+            this.sim.photonsPerTick = v
+            this.sim.time = 0
+        }
+
+        this.maxSegments = new SliderInput("maxSegments", "maxSegmentsSpan", 8)
+        this.maxSegments.onChange = (v) => {
+            this.renderer.clear()
+            this.sim.maxSegments = v
+            this.sim.time = 0
+        }
+
+        this.abbeNumber = new SliderInput("abbeInput", "abbeSpan", 20)
+        this.abbeNumber.onChange = (v) => {
+            this.renderer.clear()
+            this.dispersionModel.abbe = v
+            this.sim.time = 0
+        }
+
+        this.ior = new SliderInput("iorInput", "iorSpan", 1.52)
+        this.ior.onChange = (v) => {
+            this.renderer.clear()
+            this.dispersionModel.iorSodiumD = v
+            this.sim.time = 0
+        }
+
         this.canvas = document.getElementById("canvas") as HTMLCanvasElement
-        this.photonCountInput = document.getElementById("photonCount") as HTMLInputElement
-        this.photonCount = document.getElementById("photonCountSpan") as HTMLSpanElement
-        this.maxSegmentsInput = document.getElementById("maxSegments") as HTMLInputElement
-        this.maxSegments = document.getElementById("maxSegmentsSpan") as HTMLSpanElement
 
-        this.photonCountInput.value = this.sim.photonsPerTick.toString()
-        this.photonCount.innerText = this.sim.photonsPerTick.toString()
-
-        this.maxSegmentsInput.value = this.sim.maxSegments.toString()
-        this.maxSegments.innerText = this.sim.maxSegments.toString()
-
-        this.photonCountInput.addEventListener("input", (e) => this.photonInputChange.call(this, e))
-        this.maxSegmentsInput.addEventListener("input", (e) => this.segmentInputChange.call(this, e))
         this.canvas.addEventListener("mousemove", (e) => this.mouseMove.call(this, e))
         this.canvas.addEventListener("mousedown", (e) => this.mouseDown.call(this, e))
         this.canvas.addEventListener("mouseup", (e) => this.mouseUp.call(this, e))
@@ -137,18 +153,29 @@ export class Application {
     mouseUp (e: MouseEvent){
         this.selected = null;
     }
+}
 
-    photonInputChange(e: Event) {
-        this.sim.photonsPerTick = Number.parseInt(this.photonCountInput.value)
-        this.photonCount.innerText = this.photonCountInput.value
-        this.sim.time = 0
-        this.renderer.clear()
+class SliderInput {
+    private inputElement: HTMLInputElement
+    private numberElement: HTMLSpanElement
+    public onChange: ((newValue: number) => void) | null
+    constructor(idInput: string, idNumber: string, initValue: number|null = null) {
+        this.inputElement = document.getElementById(idInput) as HTMLInputElement
+        this.numberElement = document.getElementById(idNumber) as HTMLSpanElement
+
+        this.inputElement.addEventListener("input", (e) => this.innerChange.call(this, e))
+        this.onChange = null
+        if (initValue !== null) {
+            this.numberElement.innerText = initValue.toString()
+        }
     }
 
-    segmentInputChange(e: Event) {
-        this.sim.maxSegments = Number.parseInt(this.maxSegmentsInput.value)
-        this.maxSegments.innerText = this.maxSegmentsInput.value
-        this.sim.time = 0
-        this.renderer.clear()
+    innerChange(_e: Event) {
+        let value = this.inputElement.value
+        this.numberElement.innerText = value
+
+        if (this.onChange != null) {
+            this.onChange(Number.parseFloat(value))
+        }
     }
 }
