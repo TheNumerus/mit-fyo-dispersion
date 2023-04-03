@@ -58,6 +58,8 @@ export class Renderer {
             let obj = this.objects.get(simObj)
             if (obj === undefined) {
                 obj = new Line(simObj.geometry, this.objectMat)
+                obj.position.set(simObj.position.x, simObj.position.y, 0.0)
+                obj.rotation.z = simObj.rotation
                 this.objects.set(simObj, obj)
                 this.scene.add(obj)
             }
@@ -67,6 +69,8 @@ export class Renderer {
             let obj = this.objects.get(simObj)
             if (obj === undefined) {
                 obj = new Line(simObj.geometry, this.objectMat)
+                obj.position.set(simObj.position.x, simObj.position.y, 0.0)
+                obj.rotation.z = simObj.rotation
                 this.objects.set(simObj, obj)
                 this.scene.add(obj)
             }

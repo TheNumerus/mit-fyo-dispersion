@@ -61,6 +61,7 @@ export class Application {
         this.canvas.addEventListener("mousedown", (e) => this.mouseDown.call(this, e))
         this.canvas.addEventListener("mouseup", (e) => this.mouseUp.call(this, e))
         this.canvas.addEventListener("wheel", (e) => this.mouseScroll.call(this, e))
+        document.addEventListener("keydown", (e) => this.keyDown.call(this, e))
         this.canvas.width = document.body.clientWidth
         this.canvas.height = document.body.clientHeight
 
@@ -103,14 +104,28 @@ export class Application {
             this.renderer.camera.position.y += e.movementY / this.canvas.height * (this.renderer.camera.scale.y * 2.0)
             this.renderer.clear()
         }
-        if (this.selected != null) {
-            let deltaX = e.movementX / this.canvas.height * (this.renderer.camera.scale.x * 2.0)
-            let deltaY = e.movementY / this.canvas.height * (this.renderer.camera.scale.y * 2.0)
+        if ((e.buttons & 1) !== 0) {
+            if (this.selected != null) {
+                let deltaX = e.movementX / this.canvas.height * (this.renderer.camera.scale.x * 2.0)
+                let deltaY = e.movementY / this.canvas.height * (this.renderer.camera.scale.y * 2.0)
 
-            this.selected.mesh.position.x += deltaX
-            this.selected.mesh.position.y -= deltaY
-            this.selected.obj.position = new Vector2(deltaX, -deltaY).add(this.selected.obj.position)
-            this.renderer.clear()
+                this.selected.mesh.position.x += deltaX
+                this.selected.mesh.position.y -= deltaY
+                this.selected.obj.position = new Vector2(deltaX, -deltaY).add(this.selected.obj.position)
+                this.renderer.clear()
+            }
+        }
+        if ((e.buttons & 4) !== 0) {
+            if (this.selected != null) {
+                let deltaX = e.movementX / this.canvas.height * (this.renderer.camera.scale.x * 2.0)
+                let deltaY = e.movementY / this.canvas.height * (this.renderer.camera.scale.y * 2.0)
+
+                this.selected.mesh.rotation.z += deltaX
+                this.selected.mesh.scale.addScalar(deltaY)
+                this.selected.obj.rotation = this.selected.obj.rotation + deltaX
+                this.selected.obj.scale = this.selected.obj.scale + deltaY
+                this.renderer.clear()
+            }
         }
     }
 
@@ -123,7 +138,7 @@ export class Application {
     }
 
     mouseDown (e: MouseEvent) {
-        if ((e.buttons & 1) !== 0) {
+        if ((e.buttons & 1) !== 0 || (e.buttons & 4) !== 0) {
             this.raycaster.setFromCamera(
                 new Vector2(
                     (e.clientX / this.canvas.width) * 2 - 1,
@@ -147,11 +162,32 @@ export class Application {
             if (moved) {
                 this.renderer.clear()
             }
+
+            e.preventDefault()
         }
     }
 
     mouseUp (e: MouseEvent){
         this.selected = null;
+    }
+
+    keyDown(e: KeyboardEvent) {
+        console.log(e)
+        if (!e.repeat) {
+            if (e.code == "KeyT") {
+                this.sim.objects.push(new TrianglePrism(new Vector2(), 1.0, this.dispersionModel))
+                this.sim.time = 0
+                this.renderer.clear()
+            } else if (e.code == "KeyS") {
+                this.sim.objects.push(new Square(new Vector2(), 1.0, this.dispersionModel))
+                this.sim.time = 0
+                this.renderer.clear()
+            } else if(e.code == "KeyL") {
+                this.sim.sources.push(new PhotonSource(new Vector2()))
+                this.sim.time = 0
+                this.renderer.clear()
+            }
+        }
     }
 }
 

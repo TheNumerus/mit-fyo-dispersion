@@ -27,6 +27,8 @@ export interface SimObject extends Movable {
 
 export interface Movable {
     position: Vector2;
+    scale: number;
+    rotation: number;
 }
 
 export class TrianglePrism implements SimObject, Movable {
@@ -42,6 +44,30 @@ export class TrianglePrism implements SimObject, Movable {
         this.geometry = this.computeGeometry()
     }
 
+    _rotation: number;
+
+    get rotation() {
+        return this._rotation
+    }
+
+    set rotation(newRot: number) {
+        this._rotation = newRot
+        this.edges = this.computeEdges()
+        this.geometry = this.computeGeometry()
+    }
+
+    _scale: number;
+
+    get scale() {
+        return this._scale
+    }
+
+    set scale(newScale: number) {
+        this._scale = newScale
+        this.edges = this.computeEdges()
+        this.geometry = this.computeGeometry()
+    }
+
     edgeLength: number;
     geometry: BufferGeometry;
     edges: Edge[];
@@ -49,10 +75,12 @@ export class TrianglePrism implements SimObject, Movable {
 
     constructor(position: Vector2, edgeLength: number = 1.0, dispersion: DispersionModel) {
         this._position = position
+        this._rotation = 0
         this.edgeLength = edgeLength
+        this.dispersion = dispersion
+        this._scale = 1.0
         this.edges = this.computeEdges()
         this.geometry = this.computeGeometry()
-        this.dispersion = dispersion
     }
 
     private computeGeometry(): BufferGeometry {
@@ -61,10 +89,10 @@ export class TrianglePrism implements SimObject, Movable {
         let c = Math.sqrt(a2 - (a2 / 4.0))
 
         let arr = new Float32Array([
-            this.position.x, this.position.y + 2 / 3 * c, 0.0,
-            this.position.x + a / 2, this.position.y - 1 / 3 * c, 0.0,
-            this.position.x - a / 2, this.position.y - 1 / 3 * c, 0.0,
-            this.position.x, this.position.y + 2 / 3 * c, 0.0,
+            0.0, 2 / 3 * c, 0.0,
+            a / 2, -1 / 3 * c, 0.0,
+            -a / 2, -1 / 3 * c, 0.0,
+            0.0, 2 / 3 * c, 0.0,
         ])
 
         let geometry = new BufferGeometry()
@@ -82,23 +110,25 @@ export class TrianglePrism implements SimObject, Movable {
         let c = Math.sqrt(a2 - (a2 / 4.0))
 
         let x1 = this.position.x
-        let x2 = this.position.x + a / 2
-        let x3 = this.position.x - a / 2
+        let x2 = this.position.x + (a / 2) * this._scale
+        let x3 = this.position.x - (a / 2) * this._scale
 
-        let y1 = this.position.y + 2 / 3 * c
-        let y2 = this.position.y - 1 / 3 * c
+        let y1 = this.position.y + (2 / 3 * c) * this._scale
+        let y2 = this.position.y - (1 / 3 * c) * this._scale
         let y3 = y2
 
         return [
-            new Edge(new Vector2(x1, y1), new Vector2(x2, y2)),
-            new Edge(new Vector2(x2, y2), new Vector2(x3, y3)),
-            new Edge(new Vector2(x3, y3), new Vector2(x1, y1))
+            new Edge(new Vector2(x1, y1).rotateAround(this._position, this._rotation), new Vector2(x2, y2).rotateAround(this._position, this._rotation)),
+            new Edge(new Vector2(x2, y2).rotateAround(this._position, this._rotation), new Vector2(x3, y3).rotateAround(this._position, this._rotation)),
+            new Edge(new Vector2(x3, y3).rotateAround(this._position, this._rotation), new Vector2(x1, y1).rotateAround(this._position, this._rotation))
         ]
     }
 }
 
 export class Square implements SimObject, Movable {
     _position: Vector2;
+    _rotation: number;
+    _scale: number;
 
     get position() {
         return this._position
@@ -106,6 +136,26 @@ export class Square implements SimObject, Movable {
 
     set position(newPos: Vector2) {
         this._position = newPos
+        this.edges = this.computeEdges()
+        this.geometry = this.computeGeometry()
+    }
+
+    get rotation() {
+        return this._rotation
+    }
+
+    set rotation(newRot: number) {
+        this._rotation = newRot
+        this.edges = this.computeEdges()
+        this.geometry = this.computeGeometry()
+    }
+
+    get scale() {
+        return this._scale
+    }
+
+    set scale(newScale: number) {
+        this._scale = newScale
         this.edges = this.computeEdges()
         this.geometry = this.computeGeometry()
     }
@@ -118,20 +168,22 @@ export class Square implements SimObject, Movable {
     constructor(position: Vector2, edgeLength: number = 1.0, dispersion: DispersionModel) {
         this._position = position
         this.edgeLength = edgeLength
+        this.dispersion = dispersion
+        this._rotation = 0.0
+        this._scale = 1.0
         this.edges = this.computeEdges()
         this.geometry = this.computeGeometry()
-        this.dispersion = dispersion
     }
 
     private computeGeometry(): BufferGeometry {
         let a = this.edgeLength
 
         let arr = new Float32Array([
-            this.position.x + a / 2, this.position.y + a / 2, 0.0,
-            this.position.x + a / 2, this.position.y - a / 2, 0.0,
-            this.position.x - a / 2, this.position.y - a / 2, 0.0,
-            this.position.x - a / 2, this.position.y + a / 2, 0.0,
-            this.position.x + a / 2, this.position.y + a / 2, 0.0,
+            a / 2, a / 2, 0.0,
+            a / 2, -a / 2, 0.0,
+            -a / 2, -a / 2, 0.0,
+            -a / 2, a / 2, 0.0,
+            a / 2, a / 2, 0.0,
         ])
 
         let geometry = new BufferGeometry()
@@ -146,24 +198,33 @@ export class Square implements SimObject, Movable {
     private computeEdges(): Edge[] {
         let a = this.edgeLength
 
-        let x1 = this.position.x + a / 2
-        let x2 = this.position.x - a / 2
+        let x1 = this.position.x + (a / 2) * this._scale
+        let x2 = this.position.x - (a / 2) * this._scale
 
-        let y1 = this.position.y + a / 2
-        let y2 = this.position.y - a / 2
+        let y1 = this.position.y + (a / 2) * this._scale
+        let y2 = this.position.y - (a / 2) * this._scale
 
         return [
-            new Edge(new Vector2(x1, y1), new Vector2(x1, y2)),
-            new Edge(new Vector2(x1, y2), new Vector2(x2, y2)),
-            new Edge(new Vector2(x2, y2), new Vector2(x2, y1)),
-            new Edge(new Vector2(x2, y1), new Vector2(x1, y1))
+            new Edge(new Vector2(x1, y1).rotateAround(this._position, this._rotation), new Vector2(x1, y2).rotateAround(this._position, this._rotation)),
+            new Edge(new Vector2(x1, y2).rotateAround(this._position, this._rotation), new Vector2(x2, y2).rotateAround(this._position, this._rotation)),
+            new Edge(new Vector2(x2, y2).rotateAround(this._position, this._rotation), new Vector2(x2, y1).rotateAround(this._position, this._rotation)),
+            new Edge(new Vector2(x2, y1).rotateAround(this._position, this._rotation), new Vector2(x1, y1).rotateAround(this._position, this._rotation))
         ]
     }
 }
 
-export class PhotonSource implements Movable{
+export class PhotonSource implements Movable {
     position: Vector2;
     _rotation: number;
+    _scale: number;
+
+    get scale() {
+        return this._scale
+    }
+
+    set scale(newScale: number) {
+        this._scale = 1.0
+    }
 
     get rotation() {
         return this._rotation
@@ -177,6 +238,7 @@ export class PhotonSource implements Movable{
     constructor(position: Vector2, rotation: number = 0.0) {
         this.position = position
         this._rotation = rotation
+        this._scale = 1.0
         this.geometry = this.computeGeometry()
     }
 
@@ -197,8 +259,6 @@ export class PhotonSource implements Movable{
             'position',
             new BufferAttribute(arr, 3)
         )
-        geometry.rotateZ(this._rotation)
-        geometry.translate(this.position.x, this.position.y, 0.0)
 
         return geometry
     }
